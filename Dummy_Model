@@ -1,1 +1,982 @@
-{"metadata":{"kernelspec":{"language":"python","display_name":"Python 3","name":"python3"},"language_info":{"name":"python","version":"3.12.13","mimetype":"text/x-python","codemirror_mode":{"name":"ipython","version":3},"pygments_lexer":"ipython3","nbconvert_exporter":"python","file_extension":".py"},"kaggle":{"accelerator":"none","dataSources":[{"sourceType":"competition","sourceId":143716}],"isInternetEnabled":true,"language":"python","sourceType":"notebook","isGpuEnabled":false}},"nbformat_minor":4,"nbformat":4,"cells":[{"cell_type":"code","source":"# This Python 3 environment comes with many helpful analytics libraries installed\n# It is defined by the kaggle/python Docker image: https://github.com/kaggle/docker-python\n# For example, here's several helpful packages to load\n\nimport numpy as np # linear algebra\nimport pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)\n\n# Input data files are available in the read-only \"../input/\" directory\n# For example, running this (by clicking run or pressing Shift+Enter) will list all files under the input directory\n\nimport os\nfor dirname, _, filenames in os.walk('/kaggle/input'):\n    for filename in filenames:\n        print(os.path.join(dirname, filename))\n\n# You can write up to 20GB to the current directory (/kaggle/working/) that gets preserved as output when you create a version using \"Save & Run All\" \n# You can also write temporary files to /kaggle/temp/, but they won't be saved outside of the current session\n\n# Use the kagglehub client library to attach Kaggle resources like competitions, datasets, and models to your session\n# Learn more about kagglehub: https://github.com/Kaggle/kagglehub/blob/main/README.md\n\nimport kagglehub\n# kagglehub.dataset_download('<owner>/<dataset-slug>')","metadata":{"_uuid":"8f2839f25d086af736a60e9eeb907d3b93b6e0e5","_cell_guid":"b1076dfc-b9ad-4769-8c92-a6c4dae69d19","trusted":true,"execution":{"iopub.status.busy":"2026-06-21T06:55:05.84184Z","iopub.execute_input":"2026-06-21T06:55:05.842182Z","iopub.status.idle":"2026-06-21T06:55:05.850731Z","shell.execute_reply.started":"2026-06-21T06:55:05.842151Z","shell.execute_reply":"2026-06-21T06:55:05.84981Z"}},"outputs":[{"name":"stdout","text":"/kaggle/input/competitions/smart-mcq-solver-challenge/sample_submission.csv\n/kaggle/input/competitions/smart-mcq-solver-challenge/train.csv\n/kaggle/input/competitions/smart-mcq-solver-challenge/test.csv\n","output_type":"stream"}],"execution_count":2},{"cell_type":"markdown","source":"# Dummy model for Registration Submission ","metadata":{}},{"cell_type":"code","source":"import pandas as pd\n \nINPUT_DIR = \"/kaggle/input/competitions/smart-mcq-solver-challenge\"\n \ntrain = pd.read_csv(f\"{INPUT_DIR}/train.csv\")\ntest = pd.read_csv(f\"{INPUT_DIR}/test.csv\")\nsample_sub = pd.read_csv(f\"{INPUT_DIR}/sample_submission.csv\")\n \nprint(\"train shape:\", train.shape)\nprint(\"test shape:\", test.shape)\nprint(train.head())\nprint(sample_sub.head())\n \n# Dummy prediction: always guess A, B, C in that order\ntest[\"Prediction\"] = \"A B C\"\n \nsubmission = test[[\"id\", \"Prediction\"]].rename(columns={\"id\": \"ID\"})\n \nsubmission.to_csv(\"/kaggle/working/submission.csv\", index=False)\nprint(\"Saved submission.csv\")\nprint(submission.head())\n ","metadata":{"trusted":true,"execution":{"iopub.status.busy":"2026-06-21T06:55:09.362629Z","iopub.execute_input":"2026-06-21T06:55:09.363079Z","iopub.status.idle":"2026-06-21T06:55:09.514405Z","shell.execute_reply.started":"2026-06-21T06:55:09.363042Z","shell.execute_reply":"2026-06-21T06:55:09.513366Z"}},"outputs":[{"name":"stdout","text":"train shape: (2000, 8)\ntest shape: (500, 7)\n   id                                             prompt  \\\n0   1  Pick the best possible answer: What is Martin ...   \n1   2        What is accelerator-based light-ion fusion?   \n2   3  Determine the correct option: What is the term...   \n3   4  Select the most accurate option: What is Marti...   \n4   5  Identify the correct statement: What is the co...   \n\n                                                   A  \\\n0  Martin Heidegger believes that humans exist wi...   \n1  Accelerator-based light-ion fusion is a techni...   \n2                                       Blueshifting   \n3  Martin Heidegger believes that humans exist wi...   \n4  Simultaneity is relative, meaning that two eve...   \n\n                                                   B  \\\n0  Martin Heidegger believes that humans do not e...   \n1  Accelerator-based light-ion fusion is a techni...   \n2                                        Redshifting   \n3  Martin Heidegger believes that humans do not e...   \n4  Simultaneity is relative, meaning that two eve...   \n\n                                                   C  \\\n0  Martin Heidegger does not believe in the exist...   \n1  Accelerator-based light-ion fusion is a techni...   \n2                                          Reddening   \n3  Martin Heidegger does not believe in the exist...   \n4  Simultaneity is absolute, meaning that two eve...   \n\n                                                   D  \\\n0  Martin Heidegger believes that the relationshi...   \n1  Accelerator-based light-ion fusion is a techni...   \n2                                          Whitening   \n3  Martin Heidegger believes that the relationshi...   \n4  Simultaneity is a concept that applies only to...   \n\n                                                   E answer  \n0  Martin Heidegger believes that time is an illu...      B  \n1  Accelerator-based light-ion fusion is a techni...      A  \n2                                          Yellowing      C  \n3  Martin Heidegger believes that time is an illu...      B  \n4  Simultaneity is a concept that applies only to...      A  \n   ID Prediction\n0   1      A B C\n1   2      A B C\n2   3      A B C\n3   4      A B C\n4   5      A B C\nSaved submission.csv\n   ID Prediction\n0   1      A B C\n1   2      A B C\n2   3      A B C\n3   4      A B C\n4   5      A B C\n","output_type":"stream"}],"execution_count":3}]}
+{
+ "cells": [
+  {
+   "cell_type": "code",
+   "execution_count": 1,
+   "id": "721948c1",
+   "metadata": {
+    "_cell_guid": "b1076dfc-b9ad-4769-8c92-a6c4dae69d19",
+    "_uuid": "8f2839f25d086af736a60e9eeb907d3b93b6e0e5",
+    "execution": {
+     "iopub.execute_input": "2026-06-24T02:45:09.268746Z",
+     "iopub.status.busy": "2026-06-24T02:45:09.268275Z",
+     "iopub.status.idle": "2026-06-24T02:45:12.667920Z",
+     "shell.execute_reply": "2026-06-24T02:45:12.666874Z"
+    },
+    "papermill": {
+     "duration": 3.409192,
+     "end_time": "2026-06-24T02:45:12.670498+00:00",
+     "exception": false,
+     "start_time": "2026-06-24T02:45:09.261306+00:00",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "/kaggle/input/competitions/smart-mcq-solver-challenge/sample_submission.csv\n",
+      "/kaggle/input/competitions/smart-mcq-solver-challenge/train.csv\n",
+      "/kaggle/input/competitions/smart-mcq-solver-challenge/test.csv\n"
+     ]
+    }
+   ],
+   "source": [
+    "# This Python 3 environment comes with many helpful analytics libraries installed\n",
+    "# It is defined by the kaggle/python Docker image: https://github.com/kaggle/docker-python\n",
+    "# For example, here's several helpful packages to load\n",
+    "\n",
+    "import numpy as np # linear algebra\n",
+    "import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)\n",
+    "\n",
+    "# Input data files are available in the read-only \"../input/\" directory\n",
+    "# For example, running this (by clicking run or pressing Shift+Enter) will list all files under the input directory\n",
+    "\n",
+    "import os\n",
+    "for dirname, _, filenames in os.walk('/kaggle/input'):\n",
+    "    for filename in filenames:\n",
+    "        print(os.path.join(dirname, filename))\n",
+    "\n",
+    "# You can write up to 20GB to the current directory (/kaggle/working/) that gets preserved as output when you create a version using \"Save & Run All\" \n",
+    "# You can also write temporary files to /kaggle/temp/, but they won't be saved outside of the current session\n",
+    "\n",
+    "# Use the kagglehub client library to attach Kaggle resources like competitions, datasets, and models to your session\n",
+    "# Learn more about kagglehub: https://github.com/Kaggle/kagglehub/blob/main/README.md\n",
+    "\n",
+    "import kagglehub\n",
+    "# kagglehub.dataset_download('<owner>/<dataset-slug>')"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "91e6f2b3",
+   "metadata": {
+    "papermill": {
+     "duration": 0.004039,
+     "end_time": "2026-06-24T02:45:12.680125+00:00",
+     "exception": false,
+     "start_time": "2026-06-24T02:45:12.676086+00:00",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "# Dummy model for Registration Submission "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "id": "36bb414d",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2026-06-24T02:45:12.689645Z",
+     "iopub.status.busy": "2026-06-24T02:45:12.689153Z",
+     "iopub.status.idle": "2026-06-24T02:45:12.845467Z",
+     "shell.execute_reply": "2026-06-24T02:45:12.844170Z"
+    },
+    "papermill": {
+     "duration": 0.163703,
+     "end_time": "2026-06-24T02:45:12.847716+00:00",
+     "exception": false,
+     "start_time": "2026-06-24T02:45:12.684013+00:00",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "train shape: (2000, 8)\n",
+      "test shape: (500, 7)\n",
+      "   id                                             prompt  \\\n",
+      "0   1  Pick the best possible answer: What is Martin ...   \n",
+      "1   2        What is accelerator-based light-ion fusion?   \n",
+      "2   3  Determine the correct option: What is the term...   \n",
+      "3   4  Select the most accurate option: What is Marti...   \n",
+      "4   5  Identify the correct statement: What is the co...   \n",
+      "\n",
+      "                                                   A  \\\n",
+      "0  Martin Heidegger believes that humans exist wi...   \n",
+      "1  Accelerator-based light-ion fusion is a techni...   \n",
+      "2                                       Blueshifting   \n",
+      "3  Martin Heidegger believes that humans exist wi...   \n",
+      "4  Simultaneity is relative, meaning that two eve...   \n",
+      "\n",
+      "                                                   B  \\\n",
+      "0  Martin Heidegger believes that humans do not e...   \n",
+      "1  Accelerator-based light-ion fusion is a techni...   \n",
+      "2                                        Redshifting   \n",
+      "3  Martin Heidegger believes that humans do not e...   \n",
+      "4  Simultaneity is relative, meaning that two eve...   \n",
+      "\n",
+      "                                                   C  \\\n",
+      "0  Martin Heidegger does not believe in the exist...   \n",
+      "1  Accelerator-based light-ion fusion is a techni...   \n",
+      "2                                          Reddening   \n",
+      "3  Martin Heidegger does not believe in the exist...   \n",
+      "4  Simultaneity is absolute, meaning that two eve...   \n",
+      "\n",
+      "                                                   D  \\\n",
+      "0  Martin Heidegger believes that the relationshi...   \n",
+      "1  Accelerator-based light-ion fusion is a techni...   \n",
+      "2                                          Whitening   \n",
+      "3  Martin Heidegger believes that the relationshi...   \n",
+      "4  Simultaneity is a concept that applies only to...   \n",
+      "\n",
+      "                                                   E answer  \n",
+      "0  Martin Heidegger believes that time is an illu...      B  \n",
+      "1  Accelerator-based light-ion fusion is a techni...      A  \n",
+      "2                                          Yellowing      C  \n",
+      "3  Martin Heidegger believes that time is an illu...      B  \n",
+      "4  Simultaneity is a concept that applies only to...      A  \n",
+      "   ID Prediction\n",
+      "0   1      A B C\n",
+      "1   2      A B C\n",
+      "2   3      A B C\n",
+      "3   4      A B C\n",
+      "4   5      A B C\n",
+      "Saved submission.csv\n",
+      "   ID Prediction\n",
+      "0   1      A B C\n",
+      "1   2      A B C\n",
+      "2   3      A B C\n",
+      "3   4      A B C\n",
+      "4   5      A B C\n"
+     ]
+    }
+   ],
+   "source": [
+    "import pandas as pd\n",
+    " \n",
+    "INPUT_DIR = \"/kaggle/input/competitions/smart-mcq-solver-challenge\"\n",
+    " \n",
+    "train = pd.read_csv(f\"{INPUT_DIR}/train.csv\")\n",
+    "test = pd.read_csv(f\"{INPUT_DIR}/test.csv\")\n",
+    "sample_sub = pd.read_csv(f\"{INPUT_DIR}/sample_submission.csv\")\n",
+    " \n",
+    "print(\"train shape:\", train.shape)\n",
+    "print(\"test shape:\", test.shape)\n",
+    "print(train.head())\n",
+    "print(sample_sub.head())\n",
+    " \n",
+    "# Dummy prediction: always guess A, B, C in that order\n",
+    "test[\"Prediction\"] = \"A B C\"\n",
+    " \n",
+    "submission = test[[\"id\", \"Prediction\"]].rename(columns={\"id\": \"ID\"})\n",
+    " \n",
+    "submission.to_csv(\"/kaggle/working/submission.csv\", index=False)\n",
+    "print(\"Saved submission.csv\")\n",
+    "print(submission.head())\n",
+    " "
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "1132dd9d",
+   "metadata": {
+    "papermill": {
+     "duration": 0.004334,
+     "end_time": "2026-06-24T02:45:12.856097+00:00",
+     "exception": false,
+     "start_time": "2026-06-24T02:45:12.851763+00:00",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "# Milestone 1"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "1306f556",
+   "metadata": {
+    "papermill": {
+     "duration": 0.003769,
+     "end_time": "2026-06-24T02:45:12.863786+00:00",
+     "exception": false,
+     "start_time": "2026-06-24T02:45:12.860017+00:00",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "## Calculate the frequency distribution of the correct  answer  (A, B, C, D, E) in train.csv. Based on your counts, what is the sum of the occurrences of the most frequent option and the least frequent option?  "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 3,
+   "id": "60062141",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2026-06-24T02:45:12.874485Z",
+     "iopub.status.busy": "2026-06-24T02:45:12.873171Z",
+     "iopub.status.idle": "2026-06-24T02:45:12.896755Z",
+     "shell.execute_reply": "2026-06-24T02:45:12.895743Z"
+    },
+    "papermill": {
+     "duration": 0.031321,
+     "end_time": "2026-06-24T02:45:12.898971+00:00",
+     "exception": false,
+     "start_time": "2026-06-24T02:45:12.867650+00:00",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "answer\n",
+       "B    490\n",
+       "C    459\n",
+       "A    369\n",
+       "D    358\n",
+       "E    324\n",
+       "Name: count, dtype: int64"
+      ]
+     },
+     "execution_count": 3,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "# train and test are the datasets respectively\n",
+    "y=train[\"answer\"]\n",
+    "y.value_counts()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "733d8ad8",
+   "metadata": {
+    "papermill": {
+     "duration": 0.00382,
+     "end_time": "2026-06-24T02:45:12.906738+00:00",
+     "exception": false,
+     "start_time": "2026-06-24T02:45:12.902918+00:00",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "## After converting the prompt column to lowercase and removing all standard punctuation characters (using Python's string.punctuation), split the text by whitespace. What is the total number of unique words (vocabulary size) across the entire cleaned prompt column of train.csv?  "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 4,
+   "id": "864f194c",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2026-06-24T02:45:12.916681Z",
+     "iopub.status.busy": "2026-06-24T02:45:12.916265Z",
+     "iopub.status.idle": "2026-06-24T02:45:12.943110Z",
+     "shell.execute_reply": "2026-06-24T02:45:12.941817Z"
+    },
+    "papermill": {
+     "duration": 0.034489,
+     "end_time": "2026-06-24T02:45:12.945218+00:00",
+     "exception": false,
+     "start_time": "2026-06-24T02:45:12.910729+00:00",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Vocabulary Size: 859\n"
+     ]
+    }
+   ],
+   "source": [
+    "import string \n",
+    "# Convert to lowercase\n",
+    "cleaned = train[\"prompt\"].str.lower()\n",
+    "\n",
+    "# Remove punctuation\n",
+    "cleaned = cleaned.str.translate(\n",
+    "    str.maketrans('', '', string.punctuation)\n",
+    ")\n",
+    "\n",
+    "# Split into words and collect vocabulary\n",
+    "vocab = set()\n",
+    "\n",
+    "for text in cleaned:\n",
+    "    vocab.update(text.split())\n",
+    "\n",
+    "# Vocabulary size\n",
+    "print(\"Vocabulary Size:\", len(vocab))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "86d8ad73",
+   "metadata": {
+    "papermill": {
+     "duration": 0.004624,
+     "end_time": "2026-06-24T02:45:12.953981+00:00",
+     "exception": false,
+     "start_time": "2026-06-24T02:45:12.949357+00:00",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "## Using the cleaned prompt from Row ID 1, filter out the standard English stop words using sklearn.feature_extraction.text.ENGLISH_STOP_WORDS. How many words are left in the prompt for Row ID 1 after filtering? "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 5,
+   "id": "f31d69cb",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2026-06-24T02:45:12.963767Z",
+     "iopub.status.busy": "2026-06-24T02:45:12.963332Z",
+     "iopub.status.idle": "2026-06-24T02:45:16.324375Z",
+     "shell.execute_reply": "2026-06-24T02:45:16.323003Z"
+    },
+    "papermill": {
+     "duration": 3.368628,
+     "end_time": "2026-06-24T02:45:16.326604+00:00",
+     "exception": false,
+     "start_time": "2026-06-24T02:45:12.957976+00:00",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Words Left: 13\n"
+     ]
+    }
+   ],
+   "source": [
+    "from sklearn.feature_extraction.text import (\n",
+    "    TfidfVectorizer,\n",
+    "    ENGLISH_STOP_WORDS\n",
+    ")\n",
+    "\n",
+    "from sklearn.metrics.pairwise import cosine_similarity\n",
+    "row1_prompt = train.loc[\n",
+    "    train[\"id\"] == 1,\n",
+    "    \"prompt\"\n",
+    "].iloc[0]\n",
+    "\n",
+    "cleaned = row1_prompt.lower().translate(\n",
+    "    str.maketrans('', '', string.punctuation)\n",
+    ")\n",
+    "\n",
+    "words = cleaned.split()\n",
+    "\n",
+    "filtered_words = [\n",
+    "    word\n",
+    "    for word in words\n",
+    "    if word not in ENGLISH_STOP_WORDS\n",
+    "]\n",
+    "\n",
+    "print(\"Words Left:\", len(filtered_words))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "c286ce5f",
+   "metadata": {
+    "papermill": {
+     "duration": 0.004628,
+     "end_time": "2026-06-24T02:45:16.336170+00:00",
+     "exception": false,
+     "start_time": "2026-06-24T02:45:16.331542+00:00",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "## Fit a default TfidfVectorizer(stop_words='english') on a list containing all the combined text of the prompts and options in train.csv. What is the exact total number of feature columns (vocabulary size) generated by the vectorizer?  "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 6,
+   "id": "ea91b5d8",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2026-06-24T02:45:16.347118Z",
+     "iopub.status.busy": "2026-06-24T02:45:16.346627Z",
+     "iopub.status.idle": "2026-06-24T02:45:16.575946Z",
+     "shell.execute_reply": "2026-06-24T02:45:16.574636Z"
+    },
+    "papermill": {
+     "duration": 0.237143,
+     "end_time": "2026-06-24T02:45:16.578129+00:00",
+     "exception": false,
+     "start_time": "2026-06-24T02:45:16.340986+00:00",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Feature Columns: 2762\n"
+     ]
+    }
+   ],
+   "source": [
+    "combined_text = (\n",
+    "    train[\"prompt\"].fillna(\"\") + \" \" +\n",
+    "    train[\"A\"].fillna(\"\") + \" \" +\n",
+    "    train[\"B\"].fillna(\"\") + \" \" +\n",
+    "    train[\"C\"].fillna(\"\") + \" \" +\n",
+    "    train[\"D\"].fillna(\"\") + \" \" +\n",
+    "    train[\"E\"].fillna(\"\")\n",
+    ")\n",
+    "\n",
+    "vectorizer = TfidfVectorizer(\n",
+    "    stop_words=\"english\"\n",
+    ")\n",
+    "\n",
+    "vectorizer.fit(combined_text)\n",
+    "\n",
+    "print(\n",
+    "    \"Feature Columns:\",\n",
+    "    len(vectorizer.get_feature_names_out())\n",
+    ")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "9173b7ab",
+   "metadata": {
+    "papermill": {
+     "duration": 0.00442,
+     "end_time": "2026-06-24T02:45:16.586863+00:00",
+     "exception": false,
+     "start_time": "2026-06-24T02:45:16.582443+00:00",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "## Using the TF-IDF vectorizer fitted in Question 3, calculate the cosine similarity between the prompt and option A strictly for Row ID 1. What is the resulting similarity score? (Round to 4 decimal places).  "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 7,
+   "id": "d6f47dc0",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2026-06-24T02:45:16.597756Z",
+     "iopub.status.busy": "2026-06-24T02:45:16.596952Z",
+     "iopub.status.idle": "2026-06-24T02:45:16.616952Z",
+     "shell.execute_reply": "2026-06-24T02:45:16.615838Z"
+    },
+    "papermill": {
+     "duration": 0.02775,
+     "end_time": "2026-06-24T02:45:16.619065+00:00",
+     "exception": false,
+     "start_time": "2026-06-24T02:45:16.591315+00:00",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Cosine Similarity: 0.272\n"
+     ]
+    }
+   ],
+   "source": [
+    "row = train[train[\"id\"] == 1].iloc[0]\n",
+    "\n",
+    "prompt_vec = vectorizer.transform(\n",
+    "    [row[\"prompt\"]]\n",
+    ")\n",
+    "\n",
+    "optionA_vec = vectorizer.transform(\n",
+    "    [row[\"A\"]]\n",
+    ")\n",
+    "\n",
+    "similarity = cosine_similarity(\n",
+    "    prompt_vec,\n",
+    "    optionA_vec\n",
+    ")[0][0]\n",
+    "\n",
+    "print(\n",
+    "    \"Cosine Similarity:\",\n",
+    "    round(similarity, 4)\n",
+    ")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "82cd5a98",
+   "metadata": {
+    "papermill": {
+     "duration": 0.004223,
+     "end_time": "2026-06-24T02:45:16.627628+00:00",
+     "exception": false,
+     "start_time": "2026-06-24T02:45:16.623405+00:00",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "## Expand the logic from Question 4: For every row in train.csv, calculate the cosine similarity between the prompt and each of its 5 options .  Then calculate the percentage of instances where the option with the highest cosine similarity matches the correct answer.   \n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 8,
+   "id": "ca1105df",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2026-06-24T02:45:16.638249Z",
+     "iopub.status.busy": "2026-06-24T02:45:16.637850Z",
+     "iopub.status.idle": "2026-06-24T02:45:29.025168Z",
+     "shell.execute_reply": "2026-06-24T02:45:29.024143Z"
+    },
+    "papermill": {
+     "duration": 12.395123,
+     "end_time": "2026-06-24T02:45:29.027127+00:00",
+     "exception": false,
+     "start_time": "2026-06-24T02:45:16.632004+00:00",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Percentage: 13.55\n"
+     ]
+    }
+   ],
+   "source": [
+    "correct = 0\n",
+    "\n",
+    "for _, row in train.iterrows():\n",
+    "\n",
+    "    prompt_vec = vectorizer.transform(\n",
+    "        [row[\"prompt\"]]\n",
+    "    )\n",
+    "\n",
+    "    sims = {}\n",
+    "\n",
+    "    for option in [\"A\", \"B\", \"C\", \"D\", \"E\"]:\n",
+    "\n",
+    "        option_vec = vectorizer.transform(\n",
+    "            [row[option]]\n",
+    "        )\n",
+    "\n",
+    "        sims[option] = cosine_similarity(\n",
+    "            prompt_vec,\n",
+    "            option_vec\n",
+    "        )[0][0]\n",
+    "\n",
+    "    predicted = max(\n",
+    "        sims,\n",
+    "        key=sims.get\n",
+    "    )\n",
+    "\n",
+    "    if predicted == row[\"answer\"]:\n",
+    "        correct += 1\n",
+    "\n",
+    "accuracy = (\n",
+    "    correct / len(train)\n",
+    ") * 100\n",
+    "\n",
+    "print(\n",
+    "    \"Percentage:\",\n",
+    "    round(accuracy, 2)\n",
+    ")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "4c12dbdc",
+   "metadata": {
+    "papermill": {
+     "duration": 0.005107,
+     "end_time": "2026-06-24T02:45:29.037014+00:00",
+     "exception": false,
+     "start_time": "2026-06-24T02:45:29.031907+00:00",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "## If the ground truth answer for a question is C, what is the MAP@3 score if a model predicts C A B?  "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 9,
+   "id": "f8b70167",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2026-06-24T02:45:29.048254Z",
+     "iopub.status.busy": "2026-06-24T02:45:29.047798Z",
+     "iopub.status.idle": "2026-06-24T02:45:29.054557Z",
+     "shell.execute_reply": "2026-06-24T02:45:29.053396Z"
+    },
+    "papermill": {
+     "duration": 0.015024,
+     "end_time": "2026-06-24T02:45:29.056886+00:00",
+     "exception": false,
+     "start_time": "2026-06-24T02:45:29.041862+00:00",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "1.0\n"
+     ]
+    }
+   ],
+   "source": [
+    "actual = \"C\"\n",
+    "preds = [\"C\",\"A\",\"B\"]\n",
+    "\n",
+    "if actual in preds:\n",
+    "    score = 1/(preds.index(actual)+1)\n",
+    "else:\n",
+    "    score = 0\n",
+    "\n",
+    "print(score)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "231fecd1",
+   "metadata": {
+    "papermill": {
+     "duration": 0.005574,
+     "end_time": "2026-06-24T02:45:29.067721+00:00",
+     "exception": false,
+     "start_time": "2026-06-24T02:45:29.062147+00:00",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "## similar to above question "
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "944155f8",
+   "metadata": {
+    "papermill": {
+     "duration": 0.004427,
+     "end_time": "2026-06-24T02:45:29.077300+00:00",
+     "exception": false,
+     "start_time": "2026-06-24T02:45:29.072873+00:00",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "## The Majority Class Baseline: Find the most frequent correct answer in the training set (using your data from Q1). Make a static prediction for every single row where that most frequent answer is your 1st guess, followed by the second most frequent, and then the third most frequent. What is the overall MAP@3 score of this \"Majority Class\" baseline on train.csv?"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 10,
+   "id": "7296bc2f",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2026-06-24T02:45:29.088716Z",
+     "iopub.status.busy": "2026-06-24T02:45:29.088178Z",
+     "iopub.status.idle": "2026-06-24T02:45:29.097540Z",
+     "shell.execute_reply": "2026-06-24T02:45:29.095896Z"
+    },
+    "papermill": {
+     "duration": 0.01779,
+     "end_time": "2026-06-24T02:45:29.099585+00:00",
+     "exception": false,
+     "start_time": "2026-06-24T02:45:29.081795+00:00",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "answer\n",
+      "B    490\n",
+      "C    459\n",
+      "A    369\n",
+      "D    358\n",
+      "E    324\n",
+      "Name: count, dtype: int64\n",
+      "['B', 'C', 'A']\n"
+     ]
+    }
+   ],
+   "source": [
+    "answer_counts = train[\"answer\"].value_counts()\n",
+    "\n",
+    "print(answer_counts)\n",
+    "\n",
+    "top3 = answer_counts.index[:3].tolist()\n",
+    "\n",
+    "print(top3)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 11,
+   "id": "790587b2",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2026-06-24T02:45:29.110599Z",
+     "iopub.status.busy": "2026-06-24T02:45:29.110176Z",
+     "iopub.status.idle": "2026-06-24T02:45:29.116457Z",
+     "shell.execute_reply": "2026-06-24T02:45:29.115354Z"
+    },
+    "papermill": {
+     "duration": 0.014625,
+     "end_time": "2026-06-24T02:45:29.118600+00:00",
+     "exception": false,
+     "start_time": "2026-06-24T02:45:29.103975+00:00",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "def apk(actual, predicted, k=3):\n",
+    "\n",
+    "    predicted = predicted[:k]\n",
+    "\n",
+    "    if actual in predicted:\n",
+    "        return 1 / (\n",
+    "            predicted.index(actual) + 1\n",
+    "        )\n",
+    "\n",
+    "    return 0"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 12,
+   "id": "60f49336",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2026-06-24T02:45:29.129498Z",
+     "iopub.status.busy": "2026-06-24T02:45:29.128838Z",
+     "iopub.status.idle": "2026-06-24T02:45:29.217054Z",
+     "shell.execute_reply": "2026-06-24T02:45:29.215728Z"
+    },
+    "papermill": {
+     "duration": 0.096401,
+     "end_time": "2026-06-24T02:45:29.219308+00:00",
+     "exception": false,
+     "start_time": "2026-06-24T02:45:29.122907+00:00",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "MAP@3: 0.42125\n"
+     ]
+    }
+   ],
+   "source": [
+    "scores = []\n",
+    "\n",
+    "for _, row in train.iterrows():\n",
+    "\n",
+    "    score = apk(\n",
+    "        row[\"answer\"],\n",
+    "        top3\n",
+    "    )\n",
+    "\n",
+    "    scores.append(score)\n",
+    "\n",
+    "print(\n",
+    "    \"MAP@3:\",\n",
+    "    np.mean(scores)\n",
+    ")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "202576aa",
+   "metadata": {
+    "papermill": {
+     "duration": 0.004766,
+     "end_time": "2026-06-24T02:45:29.229098+00:00",
+     "exception": false,
+     "start_time": "2026-06-24T02:45:29.224332+00:00",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "## The TF-IDF Pipeline: Build a basic pipeline that evaluates every row in train.csv. For each row, calculate the TF-IDF cosine similarity between the prompt and each of the 5 options. Sort these options from highest similarity to lowest to form your top 3 predictions. What is the final average MAP@3 score of this TF-IDF pipeline across the entire training set?  "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 13,
+   "id": "26d2af2f",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2026-06-24T02:45:29.241024Z",
+     "iopub.status.busy": "2026-06-24T02:45:29.240468Z",
+     "iopub.status.idle": "2026-06-24T02:45:41.657355Z",
+     "shell.execute_reply": "2026-06-24T02:45:41.655512Z"
+    },
+    "papermill": {
+     "duration": 12.425883,
+     "end_time": "2026-06-24T02:45:41.659846+00:00",
+     "exception": false,
+     "start_time": "2026-06-24T02:45:29.233963+00:00",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "TF-IDF MAP@3: 0.2961666666666667\n"
+     ]
+    }
+   ],
+   "source": [
+    "scores = []\n",
+    "\n",
+    "for _, row in train.iterrows():\n",
+    "\n",
+    "    prompt_vec = vectorizer.transform(\n",
+    "        [row[\"prompt\"]]\n",
+    "    )\n",
+    "\n",
+    "    sims = {}\n",
+    "\n",
+    "    for option in [\"A\",\"B\",\"C\",\"D\",\"E\"]:\n",
+    "\n",
+    "        option_vec = vectorizer.transform(\n",
+    "            [row[option]]\n",
+    "        )\n",
+    "\n",
+    "        sims[option] = cosine_similarity(\n",
+    "            prompt_vec,\n",
+    "            option_vec\n",
+    "        )[0][0]\n",
+    "\n",
+    "    ranked = sorted(\n",
+    "        sims.items(),\n",
+    "        key=lambda x: x[1],\n",
+    "        reverse=True\n",
+    "    )\n",
+    "\n",
+    "    top3 = [\n",
+    "        option\n",
+    "        for option, score\n",
+    "        in ranked[:3]\n",
+    "    ]\n",
+    "\n",
+    "    score = apk(\n",
+    "        row[\"answer\"],\n",
+    "        top3\n",
+    "    )\n",
+    "\n",
+    "    scores.append(score)\n",
+    "\n",
+    "print(\n",
+    "    \"TF-IDF MAP@3:\",\n",
+    "    np.mean(scores)\n",
+    ")"
+   ]
+  }
+ ],
+ "metadata": {
+  "kaggle": {
+   "accelerator": "none",
+   "dataSources": [],
+   "dockerImageVersionId": 28755,
+   "isGpuEnabled": false,
+   "isInternetEnabled": false,
+   "language": "python",
+   "sourceType": "notebook"
+  },
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.12.13"
+  },
+  "papermill": {
+   "default_parameters": {},
+   "duration": 37.737106,
+   "end_time": "2026-06-24T02:45:42.488200+00:00",
+   "environment_variables": {},
+   "exception": null,
+   "input_path": "__notebook__.ipynb",
+   "output_path": "__notebook__.ipynb",
+   "parameters": {},
+   "start_time": "2026-06-24T02:45:04.751094+00:00",
+   "version": "2.7.0"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}
