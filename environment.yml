@@ -1,0 +1,59 @@
+name: smart-mcq-solver
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+  - defaults
+
+dependencies:
+  - python=3.12
+  - pip
+
+  # Core scientific stack
+  - numpy>=1.26
+  - pandas>=2.2
+  - scikit-learn>=1.4
+  - scipy>=1.11
+
+  # PyTorch (CUDA build — adjust cuda version / index to match your GPU driver)
+  - pytorch>=2.6
+  - pytorch-cuda=12.1
+
+  - pip:
+      # Hugging Face stack — versions confirmed working together on the
+      # Model 3 (MiniLM + Qwen2.5-3B RAG + LoRA) pipeline
+      - transformers==5.0.0
+      - accelerate>=1.10
+      - datasets>=3.0
+      - tokenizers>=0.20
+
+      # Retrieval
+      - sentence-transformers==5.7.0
+
+      # Parameter-efficient fine-tuning / RLHF-style training utilities
+      - peft==0.20.0
+      - trl==1.10.0
+
+      # 4-bit NF4 quantization for Qwen2.5-3B-Instruct
+      - bitsandbytes==0.50.1
+
+      # Experiment tracking
+      - wandb>=0.18
+
+      # Kaggle notebook helper (safe to omit outside Kaggle)
+      - kaggle
+
+# Notes:
+# - Do NOT pin transformers/peft/trl to older releases (e.g. transformers==4.56.1,
+#   peft==0.17.1, trl==0.23.0) when running on a recent Kaggle base image or any
+#   environment with a newer pre-installed transformers — this produces a
+#   half-upgraded, inconsistent install (symptoms: ImportError on
+#   EvaluationStrategy / HybridCache). Install the standalone packages with
+#   `pip install -U --no-deps` instead of forcing exact old pins if you hit
+#   this locally.
+# - Model 1 (BiLSTM+Attention) additionally expects pre-trained GloVe vectors
+#   (300-dim) available locally or downloaded at runtime — see notebook.
+# - If your machine exposes >1 GPU, either restrict visibility via
+#   `CUDA_VISIBLE_DEVICES=0` before importing torch, or set
+#   `trainer.args._n_gpu = 1` before `.train()` in the LoRA fine-tuning cell,
+#   to avoid a DataParallel / device_map placement conflict.
